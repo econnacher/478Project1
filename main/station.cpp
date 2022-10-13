@@ -1,4 +1,4 @@
-//for classes
+//for classes yay
 
 enum mode {WAIT, DIFS, BACKOFF, SENDING, SIFS, ACK};
 
