@@ -33,7 +33,7 @@
 * 
 */
 
-enum mode { WAIT, DIFS, BACKOFF, SENDING, SIFS, ACK }; //We use this to keep track of the current station status
+enum mode { WAIT, DIFS, NAV, BACKOFF, SENDING, SIFS, ACK }; //We use this to keep track of the current station status
 
 class sender {
 	//Maybe we should make all of the attributes private? And keep methods as public (it is good practice in Object Oriented Design)
@@ -124,10 +124,28 @@ public:
 			break;
 
 		case DIFS:
-			if (currentTime == nextStageTime) { //DIFS is finished, move to backoff period
+			//check for channel > 0, if it is finsih difs and pause backoff go to NAV
+			if (channel > 0) {
+				status = NAV;
+				std::cout << currentTime << ": " << name << " has entered NAV" << std::endl;
+			}
+			else if (currentTime == nextStageTime) { //DIFS is finished, move to backoff period
 				status = BACKOFF;
 				nextStageTime = currentTime + backoffValue;
 				std::cout << currentTime << ": " << name << " has started BACKOFF for a packet ( " << backoffValue << " slots)" << std::endl;
+			}
+			break;
+
+		case NAV:
+			if (channel == 0) {
+				status = DIFS;
+				std::cout << currentTime << ": " << name << " has entered DIFS for a packet after leaving NAV" << std::endl;
+			}
+			else if (channel == 1) {
+				std::cout << currentTime << ": " << name << " will stay in NAV" << std::endl;
+			}
+			else {
+				std::cout << currentTime << ": " << name << "ERROR: Colision occured but shouldn't be caught here" << std::endl;
 			}
 			break;
 
@@ -138,10 +156,12 @@ public:
 				nextStageTime = currentTime + SENDINGTime;
 				std::cout << currentTime << ": " << name << " has started SENDING a packet" << std::endl;
 				returnValue = 1;
+				channel++; //temp so we can test
 			}
 
 			else if (channel > 0) { //Detected a busy channel FIXME
-				//Need to find a way to determine when the other station is expected to finish
+				status = NAV; //go to NAV
+				//Need to find a way to determine when the other station is expected to finish (solved w nav?)
 				std::cout << currentTime << ": " << name << " has detected a busy channel. Will wait till next round (backoff is " << backoffValue << " slots)" << std::endl;
 			}
 			break;
@@ -158,6 +178,29 @@ public:
 			if (currentTime == nextStageTime) { //If SIFS has ended
 				status = ACK;
 				nextStageTime = currentTime + ACKTime;
+				std::cout << currentTime << ": " << name << " has started to send an ACK" << std::endl;
+				/*if (channel == 1) { //ACK received (temporary solution)
+					successCount += 1;
+					windowSize = windowMin;
+					packetQueue--;
+					std::cout << currentTime << ": " << name << " has started to received an ACK and successfully delivered a packet" << std::endl;
+					std::cout << "\tNew total successes: " << successCount << std::endl; //Printing for debugging
+				}
+				else { //ACK not received
+					collisionCount += 1;
+					if (windowSize < windowMax) {
+						windowSize *= 2;
+					}
+					std::cout << currentTime << ": " << name << " did not receive an ACK and failed to deliver a packet" << std::endl;
+					std::cout << "\tNew total collisions: " << collisionCount << std::endl; //Printing for debugging
+				}
+				generateBackoff();
+				returnValue = -1; //After SIFS, channel is free (but the receiver will start occupying it later)*/
+			}
+			break;
+
+		case ACK:
+			if (currentTime == nextStageTime) { //If ACK period has ended, 
 				if (channel == 1) { //ACK received (temporary solution)
 					successCount += 1;
 					windowSize = windowMin;
@@ -175,12 +218,10 @@ public:
 				}
 				generateBackoff();
 				returnValue = -1; //After SIFS, channel is free (but the receiver will start occupying it later)
-			}
-			break;
+				
+				channel = 0; //temp to see how it works
 
-		case ACK:
-			if (currentTime == nextStageTime) { //If ACK period has ended, round is finished and can move on to WAIT state
-				status = WAIT;
+				status = WAIT; //ACK round is finished and can move on to WAIT state
 				if (packetQueue > 0) {
 					nextStageTime = currentTime; //If there are packets in the queue, restart the process
 				}

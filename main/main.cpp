@@ -38,12 +38,16 @@ void manualTestOneStation() {
     while (!A.packetArrivals.empty()) {
         currentTime = A.getNextEvent();
         A.refresh(currentTime);
-        int temp = rand() % 3;
-        if (temp < 2) {
-            A.channel = 1;
-        }
-        else {
-            A.channel = 0;
+        if (A.status == DIFS || A.status == NAV || A.status == BACKOFF) {
+            int temp = rand() % 3;
+            if (temp < 1) {
+                A.channel = 1;
+                std::cout << "Random channel = 1" << std::endl;
+            }
+            else {
+                A.channel = 0;
+                std::cout << "Random channel = 0" << std::endl;
+            }
         }
     }
 
