@@ -178,7 +178,7 @@ public:
 			if (currentTime == nextStageTime) { //If SIFS has ended
 				status = ACK;
 				nextStageTime = currentTime + ACKTime;
-				std::cout << currentTime << ": " << name << " has started to send an ACK" << std::endl;
+				std::cout << currentTime << ": " << name << " has started to receive an ACK" << std::endl;
 				/*if (channel == 1) { //ACK received (temporary solution)
 					successCount += 1;
 					windowSize = windowMin;
