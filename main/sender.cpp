@@ -33,12 +33,13 @@
 * 
 */
 
-enum mode { WAIT, DIFS, NAV, BACKOFF, SENDING, SIFS, ACK }; //We use this to keep track of the current station status
+
 
 class sender {
 	//Maybe we should make all of the attributes private? And keep methods as public (it is good practice in Object Oriented Design)
 	//Except the constructor and methods, those should be public
 public:
+	enum mode { WAIT, DIFS, NAV, BACKOFF, SENDING, SIFS, ACK }; //We use this to keep track of the current station status
 	//CONSTRUCTORS
 	sender() {
 		srand(time(NULL));
@@ -76,6 +77,7 @@ public:
 	int collisionCount = 0; //Keep track of total collisions (or failures)
 
 	mode status = WAIT; //Initial status
+	bool validMessage;
 
 
 	//METHODS
@@ -87,7 +89,8 @@ public:
 	}
 
 	void generateBackoff() {
-		backoffValue = rand() % windowSize;
+		//backoffValue = rand() % windowSize;
+		backoffValue = 2;
 	}
 
 	int getNextEvent() {
@@ -98,6 +101,10 @@ public:
 		else {
 			return packetArrivals[0];
 		}
+	}
+
+	void addToChannel(int value) {
+		channel += value;
 	}
 
 	//Refresh whenever something happens
@@ -116,6 +123,7 @@ public:
 		//Switch statement, basically depending on the scenario we are, we can determine what the next event will be
 		switch (status) {
 		case WAIT:
+			//nextStageTime = INT_MAX;
 			if (packetQueue > 0) { //If a packet has arrived/we have packets in the queue
 				status = DIFS;
 				nextStageTime = currentTime + DIFSTime;
@@ -127,6 +135,7 @@ public:
 			//check for channel > 0, if it is finsih difs and pause backoff go to NAV
 			if (channel > 0) {
 				status = NAV;
+				nextStageTime = currentTime + SENDINGTime + SIFSTime + ACKTime; //Have an upper limit just in case
 				std::cout << currentTime << ": " << name << " has entered NAV" << std::endl;
 			}
 			else if (currentTime == nextStageTime) { //DIFS is finished, move to backoff period
@@ -137,7 +146,7 @@ public:
 			break;
 
 		case NAV:
-			if (channel == 0) {
+			if (channel == 0 || currentTime == nextStageTime) {
 				status = DIFS;
 				std::cout << currentTime << ": " << name << " has entered DIFS for a packet after leaving NAV" << std::endl;
 			}
@@ -156,11 +165,12 @@ public:
 				nextStageTime = currentTime + SENDINGTime;
 				std::cout << currentTime << ": " << name << " has started SENDING a packet" << std::endl;
 				returnValue = 1;
-				channel++; //temp so we can test
+				//channel++; //temp so we can test
 			}
 
 			else if (channel > 0) { //Detected a busy channel FIXME
 				status = NAV; //go to NAV
+				nextStageTime = currentTime + SENDINGTime + SIFSTime + ACKTime; //Have an upper limit just in case
 				//Need to find a way to determine when the other station is expected to finish (solved w nav?)
 				std::cout << currentTime << ": " << name << " has detected a busy channel. Will wait till next round (backoff is " << backoffValue << " slots)" << std::endl;
 			}
@@ -177,7 +187,9 @@ public:
 		case SIFS:
 			if (currentTime == nextStageTime) { //If SIFS has ended
 				status = ACK;
+				validMessage = true; //Start off by assuming a message is valid
 				nextStageTime = currentTime + ACKTime;
+				returnValue = -1; //After SIFS, channel is free (but the receiver will start occupying it later)
 				std::cout << currentTime << ": " << name << " has started to receive an ACK" << std::endl;
 				/*if (channel == 1) { //ACK received (temporary solution)
 					successCount += 1;
@@ -197,11 +209,14 @@ public:
 				generateBackoff();
 				returnValue = -1; //After SIFS, channel is free (but the receiver will start occupying it later)*/
 			}
+
+			//Ensure message is still valid DURING
 			break;
 
 		case ACK:
+			
 			if (currentTime == nextStageTime) { //If ACK period has ended, 
-				if (channel == 1) { //ACK received (temporary solution)
+				if (validMessage) { //ACK received (temporary solution)
 					successCount += 1;
 					windowSize = windowMin;
 					packetQueue--;
@@ -217,9 +232,9 @@ public:
 					std::cout << "\tNew total collisions: " << collisionCount << std::endl; //Printing for debugging
 				}
 				generateBackoff();
-				returnValue = -1; //After SIFS, channel is free (but the receiver will start occupying it later)
 				
-				channel = 0; //temp to see how it works
+				
+				//channel = 0; //temp to see how it works
 
 				status = WAIT; //ACK round is finished and can move on to WAIT state
 				if (packetQueue > 0) {
@@ -228,7 +243,15 @@ public:
 				else {
 					nextStageTime = INT_MAX; //Set nextStageTime as infinity time since there are no packets arrived yet
 				}
+				break;
 			}
+
+			if (channel != 1) { //Channel stopped sending OR two messages are arriving
+				validMessage = false; 
+				std::cout << currentTime << ": Station has detected an erroneous or missing ACK message" << std::endl;
+
+			}
+
 			std::cout << currentTime << ": " << name << " has finished a round with " << packetQueue << " packets in queue." << std::endl;
 		}
 
