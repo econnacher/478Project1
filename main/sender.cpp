@@ -221,7 +221,7 @@ public:
 					windowSize = windowMin;
 					packetQueue--;
 					std::cout << currentTime << ": " << name << " has received an ACK and successfully delivered a packet" << std::endl;
-					std::cout << "\tNew total successes: " << successCount << std::endl; //Printing for debugging
+					std::cout << "\t" << name << " total successes : " << successCount << std::endl; //Printing for debugging
 				}
 				else { //ACK not received
 					collisionCount += 1;
@@ -229,7 +229,7 @@ public:
 						windowSize *= 2;
 					}
 					std::cout << currentTime << ": " << name << " did not receive an ACK and failed to deliver a packet" << std::endl;
-					std::cout << "\tNew total collisions: " << collisionCount << std::endl; //Printing for debugging
+					std::cout << "\t" << name << " total collisions : " << collisionCount << std::endl; //Printing for debugging
 				}
 				generateBackoff();
 				
