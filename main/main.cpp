@@ -150,11 +150,13 @@ void manualTestTwoRnS() {
     int currentTime;
     int channelSum = 0;
 
-    while (!A.packetArrivals.empty() || !C.packetArrivals.empty()) {
+    while ((!A.packetArrivals.empty() || !C.packetArrivals.empty()) || ((A.packetQueue > 0) || (C.packetQueue > 0) ) ) {
         //first compare wheter A or C have the first packet arrival time
         currentTime = std::min(A.getNextEvent(), C.getNextEvent());
+        currentTime = std::min(currentTime, B.getNextEvent());
+        currentTime = std::min(currentTime, D.getNextEvent()); 
 
-        if ((A.getNextEvent() < C.getNextEvent())) {
+        if ((A.nextStageTime < C.nextStageTime)) {
             if (A.nextStageTime < B.nextStageTime) {
 
                 //We refresh the scenario that happens first, then update each channel each time we refresh a station

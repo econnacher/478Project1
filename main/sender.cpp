@@ -42,14 +42,14 @@ public:
 	enum mode { WAIT, DIFS, NAV, BACKOFF, SENDING, SIFS, ACK }; //We use this to keep track of the current station status
 	//CONSTRUCTORS
 	sender() {
-		srand(time(NULL));
+		//srand(time(NULL));
 		name = 'R';
 		generateBackoff();
 	}
 
 	sender(char newName) {
 		name = newName;
-		srand(time(NULL));
+		//srand(time(NULL));
 		generateBackoff();
 	}
 
@@ -89,8 +89,8 @@ public:
 	}
 
 	void generateBackoff() {
-		//backoffValue = rand() % windowSize;
-		backoffValue = 2;
+		backoffValue = rand() % windowSize;
+		//backoffValue = 2;
 	}
 
 	int getNextEvent() {
@@ -104,7 +104,7 @@ public:
 			}
 		}
 		else {
-			return INT_MAX;
+			return nextStageTime;
 		}
 	}
 
@@ -133,6 +133,12 @@ public:
 				status = DIFS;
 				nextStageTime = currentTime + DIFSTime;
 				std::cout << currentTime << ": " << name << " has started DIFS for a packet" << std::endl;
+				//check for channel > 0, if it is go directly to NAV
+				if (channel > 0) {
+					status = NAV;
+					nextStageTime = currentTime + SENDINGTime + SIFSTime + ACKTime; //Have an upper limit just in case
+					std::cout << currentTime << ": " << name << " has entered NAV" << std::endl;
+				}
 			}
 			break;
 
@@ -153,6 +159,7 @@ public:
 		case NAV:
 			if (channel == 0 || currentTime == nextStageTime) {
 				status = DIFS;
+				nextStageTime = currentTime + DIFSTime;
 				std::cout << currentTime << ": " << name << " has entered DIFS for a packet after leaving NAV" << std::endl;
 			}
 			else if (channel == 1) {
@@ -197,7 +204,7 @@ public:
 				status = ACK;
 				validMessage = true; //Start off by assuming a message is valid
 				nextStageTime = currentTime + ACKTime;
-				//returnValue = -1; //After SIFS, channel is free (but the receiver will start occupying it later)
+				returnValue = -1; //After SIFS, channel is free (but the receiver will start occupying it later)
 				std::cout << currentTime << ": " << name << " has started to receive an ACK" << std::endl;
 				/*if (channel == 1) { //ACK received (temporary solution)
 					successCount += 1;
@@ -224,7 +231,7 @@ public:
 		case ACK:
 			if (receiverValid == false) { //Channel stopped sending OR two messages are arriving // LOOK: could change this to be an input from the function where we send in receivers value and use that to update this, that would be more accurate logic wise but i think this accomplishes the same thing
 				validMessage = false;
-				std::cout << currentTime << ": Station has detected an erroneous or missing ACK message" << std::endl;
+				std::cout << currentTime << ": Station " << name << " has detected an erroneous or missing ACK message" << std::endl;
 			}
 			if (currentTime == nextStageTime) { //If ACK period has ended, 
 				if (validMessage) { //ACK received (temporary solution)
@@ -245,7 +252,7 @@ public:
 				}
 				generateBackoff();
 				
-				returnValue = -1;
+				//returnValue = -1;
 				//channel = 0; //temp to see how it works
 
 				status = WAIT; //ACK round is finished and can move on to WAIT state

@@ -69,7 +69,7 @@ public:
 				std::cout << currentTime << ": Receiver " << name << " has begun ACK period" << std::endl;
 
 				if (validMessage) {
-					//returnValue = 1;
+					returnValue = 1;
 					std::cout << currentTime << ": Receiver " << name << " has processed the packet and will send an ACK." << std::endl;
 
 				}
