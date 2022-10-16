@@ -113,7 +113,7 @@ public:
 	}
 
 	//Refresh whenever something happens
-	int refreshS(int currentTime) {
+	int refreshS(int currentTime, bool receiverValid) {
 		int returnValue = 0; //Holds the return value (whether it has started sending a packet, nothing changed, or a packet has been removed from channel
 
 
@@ -197,7 +197,7 @@ public:
 				status = ACK;
 				validMessage = true; //Start off by assuming a message is valid
 				nextStageTime = currentTime + ACKTime;
-				returnValue = -1; //After SIFS, channel is free (but the receiver will start occupying it later)
+				//returnValue = -1; //After SIFS, channel is free (but the receiver will start occupying it later)
 				std::cout << currentTime << ": " << name << " has started to receive an ACK" << std::endl;
 				/*if (channel == 1) { //ACK received (temporary solution)
 					successCount += 1;
@@ -222,12 +222,16 @@ public:
 			break;
 
 		case ACK:
-			
+			if (receiverValid == false) { //Channel stopped sending OR two messages are arriving // LOOK: could change this to be an input from the function where we send in receivers value and use that to update this, that would be more accurate logic wise but i think this accomplishes the same thing
+				validMessage = false;
+				std::cout << currentTime << ": Station has detected an erroneous or missing ACK message" << std::endl;
+			}
 			if (currentTime == nextStageTime) { //If ACK period has ended, 
 				if (validMessage) { //ACK received (temporary solution)
 					successCount += 1;
 					windowSize = windowMin;
 					packetQueue--;
+					
 					std::cout << currentTime << ": " << name << " has received an ACK and successfully delivered a packet" << std::endl;
 					std::cout << "\t" << name << " total successes : " << successCount << std::endl; //Printing for debugging
 				}
@@ -241,7 +245,7 @@ public:
 				}
 				generateBackoff();
 				
-				
+				returnValue = -1;
 				//channel = 0; //temp to see how it works
 
 				status = WAIT; //ACK round is finished and can move on to WAIT state
@@ -254,11 +258,7 @@ public:
 				break;
 			}
 
-			if (channel != 1) { //Channel stopped sending OR two messages are arriving
-				validMessage = false; 
-				std::cout << currentTime << ": Station has detected an erroneous or missing ACK message" << std::endl;
-
-			}
+			
 
 			std::cout << currentTime << ": " << name << " has finished a round with " << packetQueue << " packets in queue." << std::endl;
 		}

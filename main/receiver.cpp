@@ -38,25 +38,27 @@ public:
 		switch (status) {
 		case WAIT:
 			validMessage = false; //reset valid message status
-			if (channel == 1 && (senderStatus == 4)) { //A packet has begun arriving
+			if (channel >= 1 && (senderStatus == 4)) { //A packet has begun arriving, greater than 1 because it must also accept packets that will collide, the collision will be detected later
 				nextStageTime = currentTime + RECEIVETime;
 				status = RECEIVE;
 				validMessage = true;
+				if (channel == 2) {
+					validMessage = false;
+				}
 				std::cout << currentTime << ": Receiver " << name << " has begun receiving a packet" << std::endl;
 			}
 			break;
 
 		case RECEIVE:
+			if (channel != 1) {
+				validMessage = false;
+				std::cout << currentTime << ": Receiver " << name << " detected a missing/erroneous packet" << std::endl;
+			}
 			if (currentTime == nextStageTime) {
 				status = SIFS;
 				nextStageTime = currentTime + SIFSTime;
 				std::cout << currentTime << ": Receiver " << name << " has started SIFS" << std::endl;
 				break;
-			}
-
-			if (channel != 1) {
-				validMessage = false;
-				std::cout << currentTime << ": Receiver " << name << " detected a missing/erroneous packet" <<std::endl;
 			}
 			break;
 
@@ -67,7 +69,7 @@ public:
 				std::cout << currentTime << ": Receiver " << name << " has begun ACK period" << std::endl;
 
 				if (validMessage) {
-					returnValue = 1;
+					//returnValue = 1;
 					std::cout << currentTime << ": Receiver " << name << " has processed the packet and will send an ACK." << std::endl;
 
 				}

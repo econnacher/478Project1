@@ -141,7 +141,7 @@ void manualTestTwoRnS() {
         aPackets.push_back(i * 300);
     }
     for (int i = 0; i < 10; i++) {
-        cPackets.push_back((i * 300));
+        cPackets.push_back((i * 300)+1);
     }
 
     A.packetArrivals = aPackets;
@@ -158,7 +158,7 @@ void manualTestTwoRnS() {
             if (A.nextStageTime < B.nextStageTime) {
 
                 //We refresh the scenario that happens first, then update each channel each time we refresh a station
-                channelSum = A.refreshS(currentTime);
+                channelSum = A.refreshS(currentTime, B.validMessage);
                 A.channel += channelSum;
                 B.channel += channelSum;
                 C.channel += channelSum;
@@ -170,7 +170,7 @@ void manualTestTwoRnS() {
                 C.channel += channelSum;
                 D.channel += channelSum;
 
-                channelSum = C.refreshS(currentTime);
+                channelSum = C.refreshS(currentTime, D.validMessage);
                 C.channel += channelSum;
                 D.channel += channelSum;
                 A.channel += channelSum;
@@ -192,13 +192,13 @@ void manualTestTwoRnS() {
                 C.channel += channelSum;
                 D.channel += channelSum;
 
-                channelSum = A.refreshS(currentTime);
+                channelSum = A.refreshS(currentTime, B.validMessage);
                 B.channel += channelSum;
                 A.channel += channelSum;
                 C.channel += channelSum;
                 D.channel += channelSum;
 
-                channelSum = C.refreshS(currentTime);
+                channelSum = C.refreshS(currentTime, D.validMessage);
                 C.channel += channelSum;
                 D.channel += channelSum;
                 A.channel += channelSum;
@@ -217,7 +217,7 @@ void manualTestTwoRnS() {
             if (C.nextStageTime < D.nextStageTime) {
 
                 //We refresh the scenario that happens first, then update each channel each time we refresh a station
-                channelSum = C.refreshS(currentTime);
+                channelSum = C.refreshS(currentTime, D.validMessage);
                 C.channel += channelSum;
                 D.channel += channelSum;
                 A.channel += channelSum;
@@ -229,7 +229,7 @@ void manualTestTwoRnS() {
                 A.channel += channelSum;
                 B.channel += channelSum;
 
-                channelSum = A.refreshS(currentTime);
+                channelSum = A.refreshS(currentTime, B.validMessage);
                 A.channel += channelSum;
                 B.channel += channelSum;
                 C.channel += channelSum;
@@ -252,13 +252,13 @@ void manualTestTwoRnS() {
                 A.channel += channelSum;
                 B.channel += channelSum;
 
-                channelSum = C.refreshS(currentTime);
+                channelSum = C.refreshS(currentTime, D.validMessage);
                 D.channel += channelSum;
                 C.channel += channelSum;
                 A.channel += channelSum;
                 B.channel += channelSum;
 
-                channelSum = A.refreshS(currentTime);
+                channelSum = A.refreshS(currentTime, B.validMessage);
                 A.channel += channelSum;
                 B.channel += channelSum;
                 C.channel += channelSum;
