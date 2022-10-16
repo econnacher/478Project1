@@ -32,13 +32,13 @@ public:
 		return nextStageTime;
 	}
 
-	int refresh(int currentTime) {
+	int refreshR(int currentTime, int senderStatus) {
 		int returnValue = 0;
 		
 		switch (status) {
 		case WAIT:
 			validMessage = false; //reset valid message status
-			if (channel == 1) { //A packet has begun arriving
+			if (channel == 1 && (senderStatus == 4)) { //A packet has begun arriving
 				nextStageTime = currentTime + RECEIVETime;
 				status = RECEIVE;
 				validMessage = true;

@@ -94,12 +94,17 @@ public:
 	}
 
 	int getNextEvent() {
-		if (nextStageTime < packetArrivals[0]) {
-			return nextStageTime;
-		}
+		if (packetArrivals.size() != 0) {
+			if (nextStageTime < packetArrivals[0]) {
+				return nextStageTime;
+			}
 
+			else {
+				return packetArrivals[0];
+			}
+		}
 		else {
-			return packetArrivals[0];
+			return INT_MAX;
 		}
 	}
 
@@ -108,7 +113,7 @@ public:
 	}
 
 	//Refresh whenever something happens
-	int refresh(int currentTime) {
+	int refreshS(int currentTime) {
 		int returnValue = 0; //Holds the return value (whether it has started sending a packet, nothing changed, or a packet has been removed from channel
 
 
@@ -173,6 +178,9 @@ public:
 				nextStageTime = currentTime + SENDINGTime + SIFSTime + ACKTime; //Have an upper limit just in case
 				//Need to find a way to determine when the other station is expected to finish (solved w nav?)
 				std::cout << currentTime << ": " << name << " has detected a busy channel. Will wait till next round (backoff is " << backoffValue << " slots)" << std::endl;
+			}
+			else {
+				std::cout << currentTime << ": " << name << " is on backoff value " << backoffValue << std::endl;
 			}
 			break;
 
