@@ -2,6 +2,8 @@
 #include <iostream>
 #include <time.h> //Used for generating random numbers
 #include <stdlib.h>     /* srand, rand */
+#include <random>
+#include <math.h>
 
 //This file contains class definitions for sender stations (such as A)
 
@@ -51,6 +53,18 @@ public:
 		name = newName;
 		//srand(time(NULL));
 		generateBackoff();
+	}
+
+	sender(char newName, int lambda) {
+		name = newName;
+		//srand(time(NULL));
+		generateBackoff();
+		generatePacketArrivals(lambda);
+	}
+
+	sender(int lambda) {
+		generateBackoff();
+		generatePacketArrivals(lambda);
 	}
 
 	//ATTRIBUTES
@@ -271,6 +285,50 @@ public:
 		}
 
 		return returnValue;
+	}
+
+	void generatePacketArrivals(int lambda) {
+		std::default_random_engine generator; //generates random values
+		std::uniform_real_distribution<double> distribution(0.0, 1.0); //Uniform distribution
+		generator.seed(time(NULL));
+
+		std::vector<double> uniformArrivals = std::vector<double>();
+
+		for (int i = 0; i < (lambda * 11); i++) {
+			double number = distribution(generator);
+			uniformArrivals.push_back(number);
+		}
+
+		std::vector<double> packetArrivalsSeconds = std::vector<double>();
+
+		//Turn this into an exponential distribution with average value lambda
+		for (int i = 0; i < uniformArrivals.size(); i++) {
+			double number = (-log(1 - uniformArrivals[i])) / lambda;
+			packetArrivalsSeconds.push_back(number);
+		}
+
+
+		//Make them all aadditions of each other
+		for (int i = 1; i < packetArrivalsSeconds.size(); i++) {
+			packetArrivalsSeconds[i] = packetArrivalsSeconds[i] + packetArrivalsSeconds[i - 1];
+		}
+
+		//Turn this into an exponential distribution with average value lambda
+		for (int i = 0; i < packetArrivalsSeconds.size(); i++) {
+			int number = ceil(packetArrivalsSeconds[i] / 0.000010);
+			packetArrivals.push_back(number);
+		}
+
+		/*
+		std::cout << "Packet arrivals: " << std::endl;
+
+		//Print them all
+		for (int i = 0; i < packetArrivals.size(); i++) {
+			std::cout << "Packet " << i << ": " << packetArrivals[i] << std::endl;
+		}
+
+		std::cout << std::endl << std::endl;
+		*/
 	}
 	
 
