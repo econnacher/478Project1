@@ -28,7 +28,7 @@ void testStationGeneration();
 
 void testTwoSendersOneReceiver();
 
-int main()
+int main2()
 {
     srand(time(NULL));
     std::cout << "Hello World!\n";
@@ -161,7 +161,7 @@ void manualTestOneReceiverOneStation() {
     while (!A.packetArrivals.empty()) {
         int channelSum = 0;
 
-        
+
         currentTime = std::min(A.getNextEvent(), B.getNextEvent());
 
         if (A.nextStageTime < B.nextStageTime) {
@@ -182,7 +182,7 @@ void manualTestOneReceiverOneStation() {
             channelSum = B.refresh(currentTime);
             B.channel += channelSum;
             A.channel += channelSum;
-       
+
             channelSum = A.refresh(currentTime);
             B.channel += channelSum;
             A.channel += channelSum;
@@ -214,7 +214,7 @@ void manualTestTwoRnS() {
         aPackets.push_back(i * 300);
     }
     for (int i = 0; i < 10; i++) {
-        cPackets.push_back((i * 300)+1);
+        cPackets.push_back((i * 300) + 1);
     }
 
     A.packetArrivals = aPackets;
@@ -223,11 +223,11 @@ void manualTestTwoRnS() {
     int currentTime;
     int channelSum = 0;
 
-    while ((!A.packetArrivals.empty() || !C.packetArrivals.empty()) || ((A.packetQueue > 0) || (C.packetQueue > 0) ) ) {
+    while ((!A.packetArrivals.empty() || !C.packetArrivals.empty()) || ((A.packetQueue > 0) || (C.packetQueue > 0))) {
         //first compare wheter A or C have the first packet arrival time
         currentTime = std::min(A.getNextEvent(), C.getNextEvent());
         currentTime = std::min(currentTime, B.getNextEvent());
-        currentTime = std::min(currentTime, D.getNextEvent()); 
+        currentTime = std::min(currentTime, D.getNextEvent());
 
         if ((A.nextStageTime < C.nextStageTime)) {
             if (A.nextStageTime < B.nextStageTime) {
@@ -353,7 +353,7 @@ void manualTestTwoRnS() {
     std::cout << std::endl << std::endl;
     std::cout << "A Successes: " << A.successCount << std::endl;
     std::cout << "A Collisions: " << A.collisionCount << std::endl;
-    std::cout << "C Successes: " << C.successCount << std::endl;        
+    std::cout << "C Successes: " << C.successCount << std::endl;
     std::cout << "C Collisions: " << C.collisionCount << std::endl;
 }
 
@@ -650,7 +650,7 @@ void testTwoSendersOneReceiver() {
                 //D.channel += channelSum;
                 B.channel += channelSum;
                 A.channel += channelSum;
-                
+
 
                 channelSum = A.refreshS(currentTime, B.validMessage);
                 A.channel += channelSum;
@@ -891,5 +891,5 @@ void scenario2(std::string fileName) {
 
     myFile.close();
 
-    
+
 }
