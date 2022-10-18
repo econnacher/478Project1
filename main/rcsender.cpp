@@ -317,7 +317,7 @@ public:
 	void generatePacketArrivals(int lambda) {
 		std::default_random_engine generator; //generates random values
 		std::uniform_real_distribution<double> distribution(0.0, 1.0); //Uniform distribution
-		generator.seed(time(NULL));
+		generator.seed(rand());
 
 		std::vector<double> uniformArrivals = std::vector<double>();
 

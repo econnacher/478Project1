@@ -22,23 +22,32 @@ void manualTestTwoRnS();
 
 void testGenerateArrivalProcess(int lambda);
 
+void testStationGeneration();
+
+void testTwoSendersOneReceiver();
+
 void scenario1(std::string fileName);
 
 void scenario2(std::string fileName);
 
-void testStationGeneration();
+void scenario3(std::string fileName);
 
-void testTwoSendersOneReceiver();
+void scenario4(std::string fileName);
 
 int main()
 {
     srand(time(NULL));
     std::cout << "Hello World!\n";
+
+    scenario1("CSMA_Same_Domain.csv");
+    scenario2("CSMA_Hidden_Terminal.csv");
+    scenario3("CSMA_VC_Same_Domain.csv");
+    scenario4("CSMA_VC_Hidden_Terminal.csv");
     //manualTestOneStation();
 
     //manualTestOneReceiverOneStation();
 
-    manualTestTwoRnS();
+    //manualTestTwoRnS();
 
     //testGenerateArrivalProcess(100);
 
@@ -203,10 +212,10 @@ void manualTestOneReceiverOneStation() {
 void manualTestTwoRnS() {
     std::cout << "Beginning manual test.\n";
 
-    rcsender A = rcsender('A');
-    rcsender C = rcsender('C');
-    rcreceiver B = rcreceiver('B');
-    rcreceiver D = rcreceiver('D');
+    sender A = sender('A');
+    sender C = sender('C');
+    receiver B = receiver('B');
+    receiver D = receiver('D');
 
     std::vector<int> aPackets = std::vector<int>();
     std::vector<int> cPackets = std::vector<int>();
@@ -288,9 +297,9 @@ void manualTestTwoRnS() {
                 B.channel += channelSum;
 
                 std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
-            };
+            }
         }
-        else {
+        else if (A.nextStageTime > C.nextStageTime){
             if (C.nextStageTime < D.nextStageTime) {
 
                 //We refresh the scenario that happens first, then update each channel each time we refresh a station
@@ -348,55 +357,11 @@ void manualTestTwoRnS() {
                 D.channel += channelSum;
 
                 std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
-            };
-        };
-    }
-
-    std::cout << std::endl << std::endl;
-    std::cout << "A Successes: " << A.successCount << std::endl;
-    std::cout << "A Collisions: " << A.collisionCount << std::endl;
-    std::cout << "C Successes: " << C.successCount << std::endl;
-    std::cout << "C Collisions: " << C.collisionCount << std::endl;
-}
-
-void scenario1(std::string fileName) {
-    int lambdaVals[6] = { 100, 200, 300, 400, 700, 1000 };
-
-    int cutoffTime = 1000000;
-
-    std::ofstream myFile(fileName);
-
-    myFile << "Lambda, ";
-    myFile << "Asuccess, ";
-    myFile << "Csuccess, ";
-    myFile << "Acollision, ";
-    myFile << "Ccollision, ";
-    myFile << "FI\n";
-
-    for (int i = 0; i < 6; i++) {
-        int lambda = lambdaVals[i];
-
-        std::cout << "Beginning manual test WITH LAMBDA = " << lambda << "\n";
-
-        sender A = sender('A', lambda);
-        sender C = sender('C', lambda);
-        receiver B = receiver('B');
-        receiver D = receiver('D');
-
-        std::vector<int> aPackets = std::vector<int>();
-        std::vector<int> cPackets = std::vector<int>();
-
-
-        int currentTime = 0;
-        int channelSum = 0;
-
-        while (currentTime < cutoffTime) {
-            //first compare wheter A or C have the first packet arrival time
-            currentTime = std::min(A.getNextEvent(), C.getNextEvent());
-            currentTime = std::min(currentTime, B.getNextEvent());
-            currentTime = std::min(currentTime, D.getNextEvent());
-
-            if ((A.nextStageTime < C.nextStageTime)) {
+            }
+        }
+        else {// Special scenario due to timing issues
+            std::cout << "HERE" << std::endl;
+            if (A.status > C.status) {
                 if (A.nextStageTime < B.nextStageTime) {
 
                     //We refresh the scenario that happens first, then update each channel each time we refresh a station
@@ -453,8 +418,9 @@ void scenario1(std::string fileName) {
                     B.channel += channelSum;
 
                     std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
-                };
+                }
             }
+
             else {
                 if (C.nextStageTime < D.nextStageTime) {
 
@@ -513,30 +479,18 @@ void scenario1(std::string fileName) {
                     D.channel += channelSum;
 
                     std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
-                };
-            };
-        };
-
-        std::cout << std::endl << std::endl;
-        std::cout << "A Successes: " << A.successCount << std::endl;
-        std::cout << "A Collisions: " << A.collisionCount << std::endl;
-        std::cout << "C Successes: " << C.successCount << std::endl;
-        std::cout << "C Collisions: " << C.collisionCount << std::endl;
-
-
-        myFile << lambda << ", ";
-        myFile << A.successCount << ", ";
-        myFile << C.successCount << ", ";
-        myFile << A.collisionCount << ", ";
-        myFile << C.collisionCount << ", ";
-        myFile << (double((A.successCount + A.collisionCount)) / (C.successCount + C.collisionCount)) << "\n";
-
-
+                }
+            }
+        }
     }
 
-    myFile.close();
-
+    std::cout << std::endl << std::endl;
+    std::cout << "A Successes: " << A.successCount << std::endl;
+    std::cout << "A Collisions: " << A.collisionCount << std::endl;
+    std::cout << "C Successes: " << C.successCount << std::endl;
+    std::cout << "C Collisions: " << C.collisionCount << std::endl;
 }
+
 
 void testStationGeneration() {
     sender A = sender('A', 100);
@@ -546,25 +500,25 @@ void testStationGeneration() {
 void testTwoSendersOneReceiver() {
     std::cout << "Beginning manual test.\n";
 
-    sender A = sender('A');
-    sender C = sender('C');
-    receiver B = receiver('B');
+    rcsender A = rcsender('A');
+    rcsender C = rcsender('C');
+    rcreceiver B = rcreceiver('B');
     //receiver D = receiver('D');
 
     std::vector<int> aPackets = std::vector<int>();
     std::vector<int> cPackets = std::vector<int>();
 
     //Populate test packet arrival times
-    /*for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10; i++) {
         aPackets.push_back(i * 300);
     }
     for (int i = 0; i < 10; i++) {
         cPackets.push_back((i * 300) + 1);
-    }*/
+    }
 
-    aPackets.push_back(0);
-    aPackets.push_back(150);
-    cPackets.push_back(101);
+    //aPackets.push_back(0);
+    //aPackets.push_back(150);
+    //cPackets.push_back(101);
 
     A.packetArrivals = aPackets;
     C.packetArrivals = cPackets;
@@ -705,6 +659,308 @@ void testTwoSendersOneReceiver() {
     std::cout << "A Collisions: " << A.collisionCount << std::endl;
     std::cout << "C Successes: " << C.successCount << std::endl;
     std::cout << "C Collisions: " << C.collisionCount << std::endl;
+}
+
+void scenario1(std::string fileName) {
+    int lambdaVals[6] = { 100, 200, 300, 400, 700, 1000 };
+
+    int cutoffTime = 1000000;
+
+    std::ofstream myFile(fileName);
+
+    myFile << "Lambda, ";
+    myFile << "Asuccess, ";
+    myFile << "Csuccess, ";
+    myFile << "Acollision, ";
+    myFile << "Ccollision, ";
+    myFile << "FI\n";
+
+    for (int i = 0; i < 6; i++) {
+        int lambda = lambdaVals[i];
+
+        std::cout << "Beginning manual test WITH LAMBDA = " << lambda << "\n";
+
+        sender A = sender('A', lambda);
+        sender C = sender('C', lambda);
+        receiver B = receiver('B');
+        receiver D = receiver('D');
+
+        std::vector<int> aPackets = std::vector<int>();
+        std::vector<int> cPackets = std::vector<int>();
+
+
+        int currentTime = 0;
+        int channelSum = 0;
+
+        while (currentTime < cutoffTime) {
+            //first compare wheter A or C have the first packet arrival time
+            currentTime = std::min(A.getNextEvent(), C.getNextEvent());
+            currentTime = std::min(currentTime, B.getNextEvent());
+            currentTime = std::min(currentTime, D.getNextEvent());
+
+            if ((A.nextStageTime < C.nextStageTime)) {
+                if (A.nextStageTime < B.nextStageTime) {
+
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = C.refreshS(currentTime, D.validMessage);
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                }
+
+                else {
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                    B.channel += channelSum;
+                    A.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    B.channel += channelSum;
+                    A.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = C.refreshS(currentTime, D.validMessage);
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                }
+            }
+            else if (A.nextStageTime > C.nextStageTime) {
+                if (C.nextStageTime < D.nextStageTime) {
+
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = C.refreshS(currentTime, D.validMessage);
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                }
+
+                else {
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                    D.channel += channelSum;
+                    C.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = C.refreshS(currentTime, D.validMessage);
+                    D.channel += channelSum;
+                    C.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                }
+            }
+            else {// Special scenario due to timing issues
+                //std::cout << "HERE" << std::endl;
+                if (A.status > C.status) {
+                    if (A.nextStageTime < B.nextStageTime) {
+
+                        //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                        channelSum = A.refreshS(currentTime, B.validMessage);
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = C.refreshS(currentTime, D.validMessage);
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                    }
+
+                    else {
+                        //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                        channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                        B.channel += channelSum;
+                        A.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = A.refreshS(currentTime, B.validMessage);
+                        B.channel += channelSum;
+                        A.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = C.refreshS(currentTime, D.validMessage);
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                    }
+                }
+
+                else {
+                    if (C.nextStageTime < D.nextStageTime) {
+
+                        //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                        channelSum = C.refreshS(currentTime, D.validMessage);
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = A.refreshS(currentTime, B.validMessage);
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                    }
+
+                    else {
+                        //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                        channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                        D.channel += channelSum;
+                        C.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = C.refreshS(currentTime, D.validMessage);
+                        D.channel += channelSum;
+                        C.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = A.refreshS(currentTime, B.validMessage);
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                    }
+                }
+            }
+        };
+
+        std::cout << std::endl << std::endl;
+        std::cout << "A Successes: " << A.successCount << std::endl;
+        std::cout << "A Collisions: " << A.collisionCount << std::endl;
+        std::cout << "C Successes: " << C.successCount << std::endl;
+        std::cout << "C Collisions: " << C.collisionCount << std::endl;
+
+
+        myFile << lambda << ", ";
+        myFile << A.successCount << ", ";
+        myFile << C.successCount << ", ";
+        myFile << A.collisionCount << ", ";
+        myFile << C.collisionCount << ", ";
+        myFile << (double((A.successCount + A.collisionCount)) / (C.successCount + C.collisionCount)) << "\n";
+
+
+    }
+
+    myFile.close();
+
 }
 
 void scenario2(std::string fileName) {
@@ -895,3 +1151,495 @@ void scenario2(std::string fileName) {
 
 
 }
+
+void scenario3(std::string fileName) {
+    int lambdaVals[6] = { 100, 200, 300, 400, 700, 1000 };
+
+    int cutoffTime = 1000000;
+
+    std::ofstream myFile(fileName);
+
+    myFile << "Lambda, ";
+    myFile << "Asuccess, ";
+    myFile << "Csuccess, ";
+    myFile << "Acollision, ";
+    myFile << "Ccollision, ";
+    myFile << "FI\n";
+
+    for (int i = 0; i < 6; i++) {
+        int lambda = lambdaVals[i];
+
+        std::cout << "Beginning manual test WITH LAMBDA = " << lambda << "\n";
+
+        rcsender A = rcsender('A', lambda);
+        rcsender C = rcsender('C', lambda);
+        rcreceiver B = rcreceiver('B');
+        rcreceiver D = rcreceiver('D');
+
+        std::vector<int> aPackets = std::vector<int>();
+        std::vector<int> cPackets = std::vector<int>();
+
+
+        int currentTime = 0;
+        int channelSum = 0;
+
+        while (currentTime < cutoffTime) {
+            //first compare wheter A or C have the first packet arrival time
+            currentTime = std::min(A.getNextEvent(), C.getNextEvent());
+            currentTime = std::min(currentTime, B.getNextEvent());
+            currentTime = std::min(currentTime, D.getNextEvent());
+
+            if ((A.nextStageTime < C.nextStageTime)) {
+                if (A.nextStageTime < B.nextStageTime) {
+
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = C.refreshS(currentTime, D.validMessage);
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                }
+
+                else {
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                    B.channel += channelSum;
+                    A.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    B.channel += channelSum;
+                    A.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = C.refreshS(currentTime, D.validMessage);
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                }
+            }
+            else if (A.nextStageTime > C.nextStageTime) {
+                if (C.nextStageTime < D.nextStageTime) {
+
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = C.refreshS(currentTime, D.validMessage);
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                }
+
+                else {
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                    D.channel += channelSum;
+                    C.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = C.refreshS(currentTime, D.validMessage);
+                    D.channel += channelSum;
+                    C.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                }
+            }
+            else {// Special scenario due to timing issues
+                //std::cout << "HERE" << std::endl;
+                if (A.status > C.status) {
+                    if (A.nextStageTime < B.nextStageTime) {
+
+                        //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                        channelSum = A.refreshS(currentTime, B.validMessage);
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = C.refreshS(currentTime, D.validMessage);
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                    }
+
+                    else {
+                        //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                        channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                        B.channel += channelSum;
+                        A.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = A.refreshS(currentTime, B.validMessage);
+                        B.channel += channelSum;
+                        A.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = C.refreshS(currentTime, D.validMessage);
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                    }
+                }
+
+                else {
+                    if (C.nextStageTime < D.nextStageTime) {
+
+                        //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                        channelSum = C.refreshS(currentTime, D.validMessage);
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = A.refreshS(currentTime, B.validMessage);
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                    }
+
+                    else {
+                        //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                        channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                        D.channel += channelSum;
+                        C.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = C.refreshS(currentTime, D.validMessage);
+                        D.channel += channelSum;
+                        C.channel += channelSum;
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+
+                        channelSum = A.refreshS(currentTime, B.validMessage);
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                        A.channel += channelSum;
+                        B.channel += channelSum;
+                        C.channel += channelSum;
+                        D.channel += channelSum;
+
+                        std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << ", " << D.name << ": " << D.channel << std::endl;
+                    }
+                }
+            }
+        };
+
+        std::cout << std::endl << std::endl;
+        std::cout << "A Successes: " << A.successCount << std::endl;
+        std::cout << "A Collisions: " << A.collisionCount << std::endl;
+        std::cout << "C Successes: " << C.successCount << std::endl;
+        std::cout << "C Collisions: " << C.collisionCount << std::endl;
+
+
+        myFile << lambda << ", ";
+        myFile << A.successCount << ", ";
+        myFile << C.successCount << ", ";
+        myFile << A.collisionCount << ", ";
+        myFile << C.collisionCount << ", ";
+        myFile << (double((A.successCount + A.collisionCount)) / (C.successCount + C.collisionCount)) << "\n";
+
+
+    }
+
+    myFile.close();
+
+}
+
+void scenario4(std::string fileName) {
+    int lambdaVals[6] = { 100, 200, 300, 400, 700, 1000 };
+
+    int cutoffTime = 1000000;
+
+    std::ofstream myFile(fileName);
+
+    myFile << "Lambda, ";
+    myFile << "Asuccess, ";
+    myFile << "Csuccess, ";
+    myFile << "Acollision, ";
+    myFile << "Ccollision, ";
+    myFile << "FI\n";
+
+    for (int i = 0; i < 6; i++) {
+        int lambda = lambdaVals[i];
+
+        std::cout << "Beginning manual test WITH LAMBDA = " << lambda << "\n";
+
+        rcsender A = rcsender('A', lambda);
+        rcsender C = rcsender('C', lambda);
+        rcreceiver B = rcreceiver('B');
+        //receiver D = receiver('D');
+
+        //std::vector<int> aPackets = std::vector<int>();
+        //std::vector<int> cPackets = std::vector<int>();
+
+        //Populate test packet arrival times
+        /*for (int i = 0; i < 10; i++) {
+            aPackets.push_back(i * 300);
+        }
+        for (int i = 0; i < 10; i++) {
+            cPackets.push_back((i * 300) + 1);
+        }*/
+
+
+        //A.packetArrivals = aPackets;
+        //C.packetArrivals = cPackets;
+
+        int currentTime = 0;
+        int channelSum = 0;
+
+        while (currentTime < cutoffTime) {
+            //first compare wheter A or C have the first packet arrival time
+            currentTime = std::min(A.getNextEvent(), C.getNextEvent());
+            currentTime = std::min(currentTime, B.getNextEvent());
+            //currentTime = std::min(currentTime, D.getNextEvent());
+
+            if ((A.nextStageTime < C.nextStageTime)) {
+                if (A.nextStageTime < B.nextStageTime) {
+
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    //C.channel += channelSum;
+                    //D.channel += channelSum;
+
+                    channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    //D.channel += channelSum;
+
+                    channelSum = C.refreshS(currentTime, B.validMessage);
+                    C.channel += channelSum;
+                    //D.channel += channelSum;
+                    //A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    /*channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;*/
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << std::endl;
+                }
+
+                else {
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = B.refreshR(currentTime, static_cast<int>(A.status));
+                    B.channel += channelSum;
+                    A.channel += channelSum;
+                    C.channel += channelSum;
+                    //D.channel += channelSum;
+
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    B.channel += channelSum;
+                    A.channel += channelSum;
+                    //C.channel += channelSum;
+                    //D.channel += channelSum;
+
+                    channelSum = C.refreshS(currentTime, B.validMessage);
+                    C.channel += channelSum;
+                    //D.channel += channelSum;
+                    //A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    /*channelSum = D.refreshR(currentTime, static_cast<int>(C.status));
+                    C.channel += channelSum;
+                    D.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;*/
+
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << std::endl;
+                };
+            }
+            else {
+                if (C.nextStageTime < B.nextStageTime) {
+
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = C.refreshS(currentTime, B.validMessage);
+                    C.channel += channelSum;
+                    //D.channel += channelSum;
+                    //A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = B.refreshR(currentTime, static_cast<int>(C.status));
+                    C.channel += channelSum;
+                    //D.channel += channelSum;
+                    B.channel += channelSum;
+                    A.channel += channelSum;
+
+
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    //C.channel += channelSum;
+                    //D.channel += channelSum;
+
+                   /* channelSum = D.refreshR(currentTime, static_cast<int>(A.status));
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;*/
+
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << std::endl;
+                }
+
+                else {
+                    //We refresh the scenario that happens first, then update each channel each time we refresh a station
+                    channelSum = B.refreshR(currentTime, static_cast<int>(C.status));
+                    //D.channel += channelSum;
+                    C.channel += channelSum;
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = C.refreshS(currentTime, B.validMessage);
+                    //D.channel += channelSum;
+                    C.channel += channelSum;
+                    //A.channel += channelSum;
+                    B.channel += channelSum;
+
+                    channelSum = A.refreshS(currentTime, B.validMessage);
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    //C.channel += channelSum;
+                    //D.channel += channelSum;
+
+                    /*channelSum = D.refreshR(currentTime, static_cast<int>(A.status));
+                    A.channel += channelSum;
+                    B.channel += channelSum;
+                    C.channel += channelSum;
+                    D.channel += channelSum;*/
+
+                    std::cout << "\t Channel values: " << A.name << ": " << A.channel << ", " << B.name << ": " << B.channel << ", " << C.name << ": " << C.channel << std::endl;
+                };
+            };
+        }
+
+        std::cout << std::endl << std::endl;
+        std::cout << "A Successes: " << A.successCount << std::endl;
+        std::cout << "A Collisions: " << A.collisionCount << std::endl;
+        std::cout << "C Successes: " << C.successCount << std::endl;
+        std::cout << "C Collisions: " << C.collisionCount << std::endl;
+
+        myFile << lambda << ", ";
+        myFile << A.successCount << ", ";
+        myFile << C.successCount << ", ";
+        myFile << A.collisionCount << ", ";
+        myFile << C.collisionCount << ", ";
+        myFile << (double((A.successCount + A.collisionCount)) / (C.successCount + C.collisionCount)) << "\n";
+    }
+
+    myFile.close();
+
+
+}
+
