@@ -13,32 +13,32 @@
 */
 
 
-class sender {
+class rcsender {
 	//Maybe we should make all of the attributes private? And keep methods as public (it is good practice in Object Oriented Design)
 	//Except the constructor and methods, those should be public
 public:
 	enum mode { WAIT, DIFS, NAV, BACKOFF, RTS, CTS, SENDING, SIFS, ACK }; //We use this to keep track of the current station status
 	//CONSTRUCTORS
-	sender() {
+	rcsender() {
 		//srand(time(NULL));
 		name = 'R';
 		generateBackoff();
 	}
 
-	sender(char newName) {
+	rcsender(char newName) {
 		name = newName;
 		//srand(time(NULL));
 		generateBackoff();
 	}
 
-	sender(char newName, int lambda) {
+	rcsender(char newName, int lambda) {
 		name = newName;
 		//srand(time(NULL));
 		generateBackoff();
 		generatePacketArrivals(lambda);
 	}
 
-	sender(int lambda) {
+	rcsender(int lambda) {
 		generateBackoff();
 		generatePacketArrivals(lambda);
 	}
@@ -129,7 +129,7 @@ public:
 				//check for channel > 0, if it is go directly to NAV
 				if (channel > 0) {
 					status = NAV;
-					nextStageTime = currentTime + SENDINGTime + SIFSTime + ACKTime; //Have an upper limit just in case
+					nextStageTime = currentTime  + RTSTime + CTSTime + SENDINGTime + 3 * SIFSTime + ACKTime; //Have an upper limit just in case
 					std::cout << currentTime << ": " << name << " has entered NAV" << std::endl;
 				}
 			}
@@ -139,7 +139,7 @@ public:
 			//check for channel > 0, if it is finsih difs and pause backoff go to NAV
 			if (channel > 0) {
 				status = NAV;
-				nextStageTime = currentTime + SENDINGTime + SIFSTime + ACKTime; //Have an upper limit just in case
+				nextStageTime = currentTime + RTSTime + CTSTime + SENDINGTime + 3 * SIFSTime + ACKTime; //Have an upper limit just in case
 				std::cout << currentTime << ": " << name << " has entered NAV" << std::endl;
 			}
 			else if (currentTime == nextStageTime) { //DIFS is finished, move to backoff period
@@ -175,9 +175,9 @@ public:
 			else if (channel > 0) { //Detected a busy channel FIXME
 				status = NAV; //go to NAV
 				//TODO: this is currently where it ends up if other channel enters RTS, which is what we want, but nextStageTime is off, so we need to be percise w channel lowering, although im not sure how that will work when they are not all in the same domain
-				nextStageTime = nextStageTime + RTSTime + CTSTime + SENDINGTime + 3*SIFSTime + ACKTime; //Have an upper limit just in case //if broken change nextStageTime back to currentTime
+				nextStageTime = currentTime + RTSTime + CTSTime + SENDINGTime + 3*SIFSTime + ACKTime; //Have an upper limit just in case //if broken change nextStageTime back to currentTime
 				//Need to find a way to determine when the other station is expected to finish (solved w nav?)
-				std::cout << currentTime << ": " << name << " has detected a busy channel. Will wait till next round (backoff is " << backoffValue << " slots)" << std::endl;
+				std::cout << currentTime << ": " << name << " has detected a busy channel. Will enter NAV to wait till next round (backoff is " << backoffValue << " slots)" << std::endl;
 			}
 			else {
 				std::cout << currentTime << ": " << name << " is on backoff value " << backoffValue << std::endl;
@@ -198,13 +198,38 @@ public:
 		case CTS:
 			prevStatus = status;
 			//receive cts from rsreceiver then go to sifs
-			if (currentTime == nextStageTime) {
-				status = SIFS;
-				nextStageTime = currentTime + SIFSTime;
-				//toggle valid to send packet
 
-				std::cout << currentTime << ": " << name << " has entered SIFS from CTS" << std::endl;
+			if (receiverValid == false) { //Channel stopped sending OR two messages are arriving // LOOK: could change this to be an input from the function where we send in receivers value and use that to update this, that would be more accurate logic wise but i think this accomplishes the same thing
+				validMessage = false;
+				std::cout << currentTime << ": Station " << name << " has detected an erroneous or missing CTS message" << std::endl;
 			}
+
+			if (currentTime == nextStageTime) { //If ACK period has ended, 
+				if (validMessage) { //ACK received (temporary solution)
+					status = SIFS;
+					nextStageTime = currentTime + SIFSTime;
+					//toggle valid to send packet
+
+					std::cout << currentTime << ": " << name << " has successfully received a CTS and entered SIFS from CTS" << std::endl;
+				}
+				else { //CTS not received
+					collisionCount += 1;
+					if (windowSize < windowMax) {
+						windowSize *= 2;
+					}
+					std::cout << currentTime << ": " << name << " did not receive a CTS and failed to start sending a packet" << std::endl;
+					std::cout << "\t" << name << " total collisions : " << collisionCount << std::endl; //Printing for debugging
+					status = WAIT; //CTS round is finished and can move on to WAIT state
+					generateBackoff();
+					if (packetQueue > 0) {
+						nextStageTime = currentTime; //If there are packets in the queue, restart the process
+					}
+					else {
+						nextStageTime = INT_MAX; //Set nextStageTime as infinity time since there are no packets arrived yet
+					}
+				}
+			}
+
 			break;
 
 		case SENDING:
@@ -213,6 +238,7 @@ public:
 				status = SIFS;
 				nextStageTime = currentTime + SIFSTime;
 				std::cout << currentTime << ": " << name << " has sent a packet and started SIFS" << std::endl;
+				//returnValue = -1;
 			}
 			break;
 
@@ -220,19 +246,22 @@ public:
 			if (currentTime == nextStageTime) { //If SIFS has ended
 				if (prevStatus == RTS) {
 					status = CTS;
+					validMessage = true;
 					nextStageTime = currentTime + CTSTime;
 					std::cout << currentTime << ": " << name << " has started to receive CTS" << std::endl;
+					returnValue = -1;
 				}
 				if (prevStatus == CTS) {
 					status = SENDING;
-					nextStageTime = currentTime + RTSTime;
+					nextStageTime = currentTime + SENDINGTime;
 					std::cout << currentTime << ": " << name << " has started to send packet" << std::endl;
+					returnValue = 1;
 				}
 				if (prevStatus == SENDING) {
 					status = ACK;
 					validMessage = true; //Start off by assuming a message is valid
 					nextStageTime = currentTime + ACKTime;
-					returnValue = -1; //After SIFS, channel is free (but the receiver will start occupying it later)
+					returnValue = -1; //need to toggle in receiver
 					std::cout << currentTime << ": " << name << " has started to receive an ACK" << std::endl;
 				}
 			}

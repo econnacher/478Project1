@@ -10,6 +10,8 @@
 #include <random>
 #include <math.h>
 #include <fstream>
+#include "rcsender.cpp"
+#include "rcreceiver.cpp"
 //#include <chrono>
 
 void manualTestOneStation();
@@ -28,7 +30,7 @@ void testStationGeneration();
 
 void testTwoSendersOneReceiver();
 
-int main2()
+int main()
 {
     srand(time(NULL));
     std::cout << "Hello World!\n";
@@ -36,7 +38,7 @@ int main2()
 
     //manualTestOneReceiverOneStation();
 
-    //manualTestTwoRnS();
+    manualTestTwoRnS();
 
     //testGenerateArrivalProcess(100);
 
@@ -46,8 +48,8 @@ int main2()
 
     //testTwoSendersOneReceiver();
 
-    scenario1("CSMA_same_collision.csv");
-    scenario2("CSMA_hidden_terminal.csv");
+    //scenario1("CSMA_same_collision.csv");
+    //scenario2("CSMA_hidden_terminal.csv");
 
 }
 
@@ -201,10 +203,10 @@ void manualTestOneReceiverOneStation() {
 void manualTestTwoRnS() {
     std::cout << "Beginning manual test.\n";
 
-    sender A = sender('A');
-    sender C = sender('C');
-    receiver B = receiver('B');
-    receiver D = receiver('D');
+    rcsender A = rcsender('A');
+    rcsender C = rcsender('C');
+    rcreceiver B = rcreceiver('B');
+    rcreceiver D = rcreceiver('D');
 
     std::vector<int> aPackets = std::vector<int>();
     std::vector<int> cPackets = std::vector<int>();
@@ -220,7 +222,7 @@ void manualTestTwoRnS() {
     A.packetArrivals = aPackets;
     C.packetArrivals = cPackets;
 
-    int currentTime;
+    int currentTime = 0;;
     int channelSum = 0;
 
     while ((!A.packetArrivals.empty() || !C.packetArrivals.empty()) || ((A.packetQueue > 0) || (C.packetQueue > 0))) {
